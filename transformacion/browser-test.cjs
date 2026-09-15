@@ -1,0 +1,41 @@
+const {chromium}=require('C:/Users/barri/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+const page=await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'America/Panama'});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+try {
+await page.goto('http://127.0.0.1:8089/transformacion/');
+await page.waitForSelector('h1');
+console.log((await page.locator('#view').innerText()).slice(0,300));
+await page.screenshot({path:'transformacion/qa-desktop.png',fullPage:true});
+assert.equal(errors.length,0,errors.join('\n'));
+await page.getByRole('button',{name:'Perfil',exact:true}).click();
+await page.locator('[name=age]').fill('30');await page.locator('[name=heightCm]').fill('180');await page.locator('[name=initialWeightKg]').fill('80');await page.locator('[name=activityFactor]').fill('1.55');
+await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();
+await page.getByRole('button',{name:'Recalcular TDEE',exact:true}).click();
+assert.match(await page.locator('#modal').innerText(),/2,759|2.759/);
+await page.getByRole('button',{name:'Aplicar este objetivo',exact:true}).click();
+await page.getByRole('button',{name:'Entrenar',exact:true}).click();
+await page.getByRole('button',{name:'Empezar',exact:true}).first().click();
+const first=page.locator('.exercise').first();
+await first.locator('[data-set=weightKg]').first().fill('20');await first.locator('[data-set=reps]').first().fill('12');
+await first.getByRole('button',{name:/^Completar .* serie 1$/}).click();
+await page.getByRole('button',{name:'Hoy',exact:true}).click();await page.getByRole('button',{name:'Continuar sesión',exact:true}).click();
+assert.equal(await page.locator('.set-row.done').count(),1);
+await page.reload();assert.equal(await page.locator('.set-row.done').count(),1);
+await page.getByRole('button',{name:'Terminar y guardar',exact:true}).click();
+assert.match(await page.locator('#modal').innerText(),/240 kg/);
+await page.getByRole('button',{name:'Cerrar',exact:true}).click();
+assert.equal(await page.locator('[data-action=summary]').count(),1);
+await page.reload();assert.equal(await page.locator('[data-action=summary]').count(),1);
+await page.getByRole('button',{name:'Registrar peso',exact:true}).click();await page.locator('#weight-form [name=weightKg]').fill('79.5');await page.getByRole('button',{name:'Guardar peso',exact:true}).click();
+await page.getByRole('button',{name:'Chequeo semanal',exact:true}).click();await page.locator('#checkin-form [name=calories]').selectOption('yes');await page.locator('#checkin-form [name=training]').selectOption('yes');await page.getByRole('button',{name:'Guardar chequeo',exact:true}).click();
+await page.getByRole('button',{name:'Comida',exact:true}).click();await page.getByRole('button',{name:'Nueva receta',exact:true}).click();await page.locator('#recipe-form [name=name]').fill('Avena diaria');await page.locator('#recipe-form input[type=number]').first().fill('100');await page.getByRole('button',{name:'Guardar receta',exact:true}).click();await page.getByRole('button',{name:'Agregar al día',exact:true}).click();await page.getByRole('button',{name:'Registrar comida',exact:true}).click();
+assert.match(await page.locator('#view').innerText(),/389/);
+await page.getByRole('button',{name:'Agregar envase',exact:true}).click();await page.locator('#supplement-form [name=name]').fill('Creatina');await page.locator('[name=remainingGrams]').fill('300');await page.locator('[name=dailyGrams]').fill('5');await page.getByRole('button',{name:'Guardar envase',exact:true}).click();await page.getByRole('button',{name:'Registrar consumo de hoy',exact:true}).click();assert.match(await page.locator('#view').innerText(),/295/);
+await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Hoy',exact:true}).click();await page.screenshot({path:'transformacion/qa-mobile.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
+assert.equal(errors.length,0,errors.join('\n'));
+console.log('PASS: perfil, macros, series persistentes, resumen, historial, peso, chequeo, receta, suplemento y móvil.');
+}catch(e){await page.screenshot({path:'transformacion/qa-failure.png',fullPage:true});throw e;}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

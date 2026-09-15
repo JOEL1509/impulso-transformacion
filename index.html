@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#081527" />
+    <title>Impulso — Entrena con intención</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="enhancements.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#inicio" aria-label="Inicio de Impulso"><span>i</span> impulso</a>
+        <button class="avatar" type="button" aria-label="Perfil" data-go="perfil">T</button>
+      </header>
+
+      <section id="inicio" class="view active" aria-labelledby="welcome-title">
+        <div class="hero">
+          <p class="eyebrow">TU ENTRENAMIENTO</p>
+          <h1 id="welcome-title">Haz que cada<br /><em>repetición</em> cuente.</h1>
+          <p class="hero-copy">Rutinas claras, técnica guiada y una progresión que se adapta a ti.</p>
+          <div class="streak-card">
+            <div><span class="flame">♨</span><strong id="streak-number">0</strong><small>sesiones esta semana</small></div>
+            <p id="streak-message">Elige una rutina para empezar.</p>
+          </div>
+        </div>
+        <section class="section-block">
+          <div class="section-heading"><div><p class="eyebrow">EMPIEZA HOY</p><h2>Tu próxima sesión</h2></div><button class="link-button" data-go="rutinas">Ver todas</button></div>
+          <article id="next-workout" class="workout-card feature-card"></article>
+        </section>
+        <section class="section-block progress-preview">
+          <div class="section-heading"><div><p class="eyebrow">PROGRESO</p><h2>Vas por buen camino</h2></div><button class="link-button" data-go="progreso">Detalles</button></div>
+          <div id="mini-progress" class="mini-progress"></div>
+        </section>
+      </section>
+
+      <section id="rutinas" class="view" aria-labelledby="routines-title">
+        <div class="page-heading"><p class="eyebrow">PLANES GUIADOS</p><h1 id="routines-title">Elige tu rutina</h1><p>Diseñadas para avanzar sin tener que improvisar.</p></div>
+        <div id="routine-list" class="routine-list"></div>
+      </section>
+
+      <section id="entrenar" class="view" aria-live="polite"></section>
+
+      <section id="progreso" class="view" aria-labelledby="progress-title">
+        <div class="page-heading"><p class="eyebrow">TU EVOLUCIÓN</p><h1 id="progress-title">Progreso real</h1><p>Pequeños avances, sostenidos en el tiempo.</p></div>
+        <div id="progress-content"></div>
+      </section>
+
+      <section id="perfil" class="view" aria-labelledby="profile-title"></section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navegación principal">
+      <button class="nav-item active" data-go="inicio"><span>⌂</span>Inicio</button>
+      <button class="nav-item" data-go="rutinas"><span>▦</span>Rutinas</button>
+      <button class="nav-item" data-go="entrenar"><span>◉</span>Entrenar</button>
+      <button class="nav-item" data-go="progreso"><span>↗</span>Progreso</button>
+      <button class="nav-item" data-go="perfil"><span>◌</span>Perfil</button>
+    </nav>
+    <dialog id="exercise-dialog"><button class="close-dialog" aria-label="Cerrar">×</button><div id="dialog-content"></div></dialog>
+    <dialog id="routine-dialog"><button class="close-dialog" aria-label="Cerrar">×</button><div id="routine-dialog-content"></div></dialog>
+    <dialog id="share-dialog"><button class="close-dialog" aria-label="Cerrar">×</button><div id="share-dialog-content"></div></dialog>
+    <script src="app.js"></script>
+  </body>
+</html>

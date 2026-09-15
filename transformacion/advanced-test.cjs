@@ -1,0 +1,31 @@
+const {chromium}=require('C:/Users/barri/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict'),fs=require('node:fs');
+(async()=>{
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+const page=await browser.newPage({viewport:{width:390,height:844},timezoneId:'America/Panama',acceptDownloads:true});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+try{
+await page.goto('http://127.0.0.1:8089/transformacion/');
+await page.getByRole('button',{name:'Entrenar',exact:true}).click();await page.getByRole('button',{name:'Crear rutina',exact:true}).click();
+await page.locator('#routine-form [name=name]').fill('Prueba <b>segura</b>');
+await page.getByRole('button',{name:'Agregar ejercicio propio',exact:true}).click();
+await page.locator('#exercise-form [name=name]').fill('Plancha lateral');await page.locator('#exercise-form [name=muscles]').fill('Core');await page.locator('#exercise-form [name=type]').selectOption('isometric');await page.locator('#exercise-form [name=sets]').fill('2');await page.locator('#exercise-form [name=repMin]').fill('20');await page.locator('#exercise-form [name=repMax]').fill('40');
+await page.locator('#exercise-form [name=media]').setInputFiles({name:'referencia.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')});
+await page.getByRole('button',{name:'Agregar a la rutina',exact:true}).click();await page.getByRole('button',{name:'Guardar rutina',exact:true}).click();
+assert.ok(await page.getByRole('heading',{name:'Prueba <b>segura</b>',exact:true}).count());assert.equal(await page.locator('h2 b').count(),0);
+await page.reload();const card=page.locator('article').filter({has:page.getByRole('heading',{name:'Prueba <b>segura</b>',exact:true})});assert.match(await card.innerText(),/1 ejercicios/);await card.getByRole('button',{name:'Empezar',exact:true}).click();
+assert.equal(await page.locator('.set-row:not(.set-head)').count(),2);assert.match(await page.locator('.exercise').innerText(),/segundos/);
+await page.getByRole('button',{name:'Técnica / multimedia',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#modal img')?.src.startsWith('blob:'));assert.equal(await page.locator('#modal img').evaluate(e=>e.complete&&e.naturalWidth>0),true);await page.getByRole('button',{name:'Cerrar',exact:true}).click();
+await page.getByRole('button',{name:'Cronometrar serie',exact:true}).first().click();await page.waitForTimeout(1200);await page.reload();await page.getByRole('button',{name:'Detener cronómetro',exact:true}).click();assert.ok(Number(await page.locator('[data-set=durationSeconds]').first().inputValue())>=1);
+await page.locator('[data-set=durationSeconds]').first().fill('30');await page.getByRole('button',{name:'Completar Plancha lateral serie 1',exact:true}).click();await page.getByRole('button',{name:'Terminar y guardar',exact:true}).click();assert.match(await page.locator('#modal').innerText(),/00:30 isométricos/);await page.getByRole('button',{name:'Cerrar',exact:true}).click();
+await page.getByRole('button',{name:'Medidas / fotos',exact:true}).click();await page.locator('[name=waist]').fill('85');await page.locator('[name=photo]').setInputFiles({name:'progreso.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')});await page.getByRole('button',{name:'Guardar registro',exact:true}).click();assert.match(await page.locator('#view').innerText(),/Cintura 85/);
+await page.getByRole('button',{name:'Exportar historial',exact:true}).click();let promise=page.waitForEvent('download');await page.getByRole('button',{name:'CSV completo',exact:true}).click();let dl=await promise;assert.ok(dl.suggestedFilename().endsWith('.csv'));
+promise=page.waitForEvent('download');await page.getByRole('button',{name:'Copia de seguridad',exact:true}).click();dl=await promise;const backup=JSON.parse(fs.readFileSync(await dl.path(),'utf8'));assert.equal(backup.media.length,2);assert.equal(backup.state.sessions.length,1);
+const pop=page.waitForEvent('popup');await page.getByRole('button',{name:'Imprimir / guardar PDF',exact:true}).click();const report=await pop;await report.waitForLoadState();assert.match(await report.locator('body').innerText(),/Plancha lateral/);await report.pdf({path:'transformacion/qa-export.pdf',format:'A4'});await report.close();
+await page.locator('#restore-form [name=backup]').setInputFiles({name:'copia.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});await page.locator('#restore-form [name=confirm]').check();await page.getByRole('button',{name:'Restaurar copia',exact:true}).click();await page.waitForTimeout(300);assert.equal(await page.locator('[data-action=summary]').count(),1);
+await page.getByRole('button',{name:'Perfil',exact:true}).click();promise=page.waitForEvent('download');await page.getByRole('button',{name:'Descargar calendario',exact:true}).click();dl=await promise;const ics=fs.readFileSync(await dl.path(),'utf8');assert.match(ics,/FREQ=DAILY/);assert.match(ics,/BYDAY=MO,WE,FR/);
+await page.getByRole('button',{name:'Hoy',exact:true}).click();await page.getByRole('button',{name:'Revisar tendencia',exact:true}).click();assert.match(await page.locator('#modal').innerText(),/14 días/);assert.equal(await page.getByRole('button',{name:'Aplicar sugerencia',exact:true}).count(),0);await page.getByRole('button',{name:'Cerrar',exact:true}).click();
+await page.screenshot({path:'transformacion/qa-mobile-complete.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.equal(errors.length,0,errors.join('\n'));
+console.log('PASS: rutina propia, persistencia de rangos, foto de ejercicio, cronómetro al recargar, isométrico, medidas/foto, CSV, PDF, copia/restauración y calendario.');
+}catch(e){await page.screenshot({path:'transformacion/qa-advanced-failure.png',fullPage:true});throw e;}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

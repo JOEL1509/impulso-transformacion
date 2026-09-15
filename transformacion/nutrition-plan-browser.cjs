@@ -1,0 +1,46 @@
+const {chromium}=require('C:/Users/barri/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict'),fs=require('node:fs');
+(async()=>{
+ const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const page=await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'America/Panama',acceptDownloads:true});page.setDefaultTimeout(10000);
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const btn=n=>page.getByRole('button',{name:n,exact:true});
+ const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('impulsoTransformacion:v1:local')));
+ const fill=async(form,values)=>{for(const [name,v] of Object.entries(values))await page.locator('#'+form+' [name='+name+']').fill(String(v));};
+ try{
+ await page.goto('http://127.0.0.1:8089/transformacion/');
+ await btn('Perfil').click();await fill('profile-form',{age:30,heightCm:180,initialWeightKg:80,activityFactor:1.55});await btn('Guardar perfil').click();await btn('Recalcular TDEE').click();await btn('Aplicar este objetivo').click();
+ await btn('Entrenar').click();await btn('Crear rutina').click();await fill('routine-form',{name:'Carga comprobada'});await btn('Agregar ejercicio propio').click();
+ await fill('exercise-form',{name:'Press de prueba',muscles:'Pecho',sets:2,repMin:8,repMax:12,plannedWeightKg:42.5,incrementKg:2.5});
+ await page.screenshot({path:'transformacion/qa-planned-load-desktop.png',fullPage:true});
+ await btn('Agregar a la rutina').click();assert.match(await page.locator('#modal').innerText(),/42[.,]5 kg planificados/);await btn('Guardar rutina').click();await page.reload();
+ const routineCard=()=>page.locator('article').filter({has:page.getByRole('heading',{name:'Carga comprobada',exact:true})});
+ await routineCard().getByRole('button',{name:'Empezar',exact:true}).click();assert.deepEqual(await page.locator('[data-set=weightKg]').evaluateAll(list=>list.map(e=>e.value)),['42.5','42.5']);
+ await page.locator('[data-set=weightKg]').first().fill('45');await page.locator('[data-set=reps]').first().fill('10');await btn('Completar Press de prueba serie 1').click();
+ await btn('Entrenar').click();await routineCard().getByRole('button',{name:'Editar rutina',exact:true}).click();await page.locator('[data-action=exercise-edit][data-index="0"]').click();await fill('exercise-form',{plannedWeightKg:0});await btn('Agregar a la rutina').click();await btn('Guardar rutina').click();
+ await btn('Continuar sesión').click();await page.reload();assert.equal(await page.locator('[data-set=weightKg]').first().inputValue(),'45');assert.equal(await page.locator('[data-set=weightKg]').nth(1).inputValue(),'42.5');
+ await btn('Terminar y guardar').click();assert.match(await page.locator('#modal').innerText(),/450 kg/);await btn('Cerrar').click();await btn('Entrenar').click();await routineCard().getByRole('button',{name:'Empezar',exact:true}).click();assert.equal(await page.locator('[data-set=weightKg]').first().inputValue(),'0');await btn('Descartar sesión').click();await btn('Descartar sesión actual').click();
+ console.log('PASS: planned 42.5 kg, actual load override, active snapshot preserved, future 0 kg and 450 kg historical volume.');
+ await btn('Comida').click();assert.equal((await saved()).foods.length,111);
+ await page.locator('#food-query').fill('yogur');assert.match(await page.locator('#food-results').innerText(),/Yogur/);assert.ok(await page.locator('#food-results [data-action=nutrition-log]').count()>0);
+ await page.locator('#food-query').fill('');await page.locator('#food-category').selectOption('Bebidas');assert.match(await page.locator('#food-results').innerText(),/Refresco/);await page.locator('#food-category').selectOption('');
+ await btn('Crear producto por etiqueta').click();await fill('food-form',{name:'Bebida prueba',brand:'Mi marca',barcode:'123456789',baseQuantity:250,kcal:120,protein:10,carbs:12,fat:4,cost:1.5});await page.locator('#food-form [name=unit]').selectOption('ml');await btn('Guardar producto').click();
+ let food=(await saved()).foods.find(f=>f.name==='Bebida prueba');assert.equal(food.kcal,48);assert.equal(food.protein,4);assert.equal(food.unit,'ml');
+ await page.locator('#food-query').fill('123456789');assert.equal(await page.locator('#food-results [data-action=nutrition-log]').count(),1);await page.locator('#food-results [data-action=nutrition-log]').click();await fill('nutrition-log-form',{qty_0:500,name:'Mi merienda'});await btn('Calcular y guardar comida').click();
+ let state=await saved(),meal=state.meals[0],today=meal.date;assert.equal(meal.kcal,240);assert.equal(meal.protein,20);assert.equal(meal.items[0].unit,'ml');assert.match(await page.locator('#view').innerText(),/Registro en curso/);
+ await btn('Ya registré todo el día').click();assert.equal((await saved()).nutritionDays[0].complete,true);
+ await page.locator('#food-results [data-action=food-edit]').click();await fill('food-form',{kcal:96});await page.locator('#food-form [name=unit]').selectOption('g');await btn('Guardar producto').click();assert.equal((await saved()).meals[0].kcal,240);
+ await page.locator('[data-action=nutrition-edit]').first().click();await fill('nutrition-log-form',{name:'Merienda corregida',qty_0:250});await btn('Guardar cambios').click();state=await saved();assert.equal(state.meals[0].kcal,120);assert.equal(state.meals[0].items[0].unit,'ml');assert.equal(state.nutritionDays[0].complete,false);
+ await btn('Ya registré todo el día').click();const d=new Date(today+'T12:00:00');d.setDate(d.getDate()-1);const yesterday=d.toISOString().slice(0,10);await page.locator('[data-action=nutrition-edit]').click();await fill('nutrition-log-form',{date:yesterday});await btn('Guardar cambios').click();state=await saved();assert.equal(state.meals[0].date,yesterday);assert.equal(state.nutritionDays.find(d=>d.date===today).complete,false);assert.equal(state.nutritionDays.find(d=>d.date===yesterday).target,null);
+ console.log('PASS: 111 foods, search/category/barcode, custom per-250 ml label, calorie persistence, historical snapshot and date movement.');
+ await btn('Ir a hoy').click();await btn('Calcular y registrar porciones').click();await btn('Calcular y guardar en el diario').click();await page.locator('#portion-result h3').waitFor();assert.match(await page.locator('#portion-result').innerText(),/Guardado en tu diario/);state=await saved();assert.equal(state.meals.length,2);assert.ok(Math.abs(state.meals.find(m=>m.date===today).kcal-500)<.5);
+ await fill('portions-form',{kcal:600,protein:35});await btn('Calcular y guardar en el diario').click();state=await saved();assert.equal(state.meals.length,2);assert.ok(Math.abs(state.meals.find(m=>m.date===today).kcal-600)<.5);
+ await page.screenshot({path:'transformacion/qa-portions-saved.png',fullPage:true});
+ await btn('Ver mi diario').click();assert.equal(await page.locator('dialog[open]').count(),0);await btn('Ya registré todo el día').click();state=await saved();assert.match(await page.locator('#view').innerText(),/Balance estimado del día:/);assert.equal(state.nutritionDays.find(d=>d.date===today).complete,true);
+ await page.reload();assert.equal((await saved()).meals.length,2);assert.match(await page.locator('#view').innerText(),/Merienda corregida|Historial calórico/);
+ let promise=page.waitForEvent('download');await btn('Exportar diario CSV').click();const dl=await promise,csv=fs.readFileSync(await dl.path(),'utf8');assert.match(csv,/Merienda corregida/);assert.match(csv,/ml/);assert.match(csv,/deficit_diario_estimado_kcal/);
+ await page.screenshot({path:'transformacion/qa-nutrition-desktop.png',fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:'transformacion/qa-nutrition-mobile.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await btn('Registrar alimento').click();await btn('Agregar otro alimento').click();await page.locator('#nutrition-log-form [name=search-item_1]').fill('pizza');const options=await page.locator('#nutrition-log-form [name=item_1] option').allTextContents();assert.ok(options.some(t=>t.includes('Pizza')));await page.screenshot({path:'transformacion/qa-meal-mobile.png',fullPage:true});assert.ok(await page.locator('#modal').evaluate(e=>e.scrollWidth<=e.clientWidth));await btn('Cerrar').click();assert.equal((await saved()).meals.length,2);
+ assert.equal(errors.length,0,errors.join('\n'));console.log('PASS: portion autosave, idempotent recalculation, closed-day deficit, reload, CSV and responsive mobile without overflow.');
+ }catch(e){await page.screenshot({path:'transformacion/qa-nutrition-failure.png',fullPage:true});throw e;}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
