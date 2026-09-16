@@ -10,7 +10,7 @@
   else root.FitnessStore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';
-  const ARRAY_KEYS = ['weights', 'checkins', 'measurements', 'photos', 'sessions', 'restDays', 'routines', 'foods', 'recipes', 'supplements', 'meals', 'nutritionDays'];
+  const ARRAY_KEYS = ['weights', 'checkins', 'measurements', 'photos', 'sessions', 'restDays', 'routines', 'foods', 'recipes', 'supplements', 'meals', 'nutritionDays', 'waterLogs'];
   const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
   const MEDIA_TYPES = /^(image\/(jpeg|png|gif|webp|avif|heic|heif)|video\/(mp4|webm|ogg|quicktime))$/i;
   let namespace = 'local';
@@ -24,7 +24,7 @@
   function createState() {
     return {
       schemaVersion: 1, profile: {}, config: { unit: 'kg' }, weights: [], checkins: [], measurements: [], photos: [],
-      sessions: [], restDays: [], routines: [], foods: [], recipes: [], supplements: [], meals: [], nutritionDays: [], activeSession: null,
+      sessions: [], restDays: [], routines: [], foods: [], recipes: [], supplements: [], meals: [], nutritionDays: [], waterLogs: [], activeSession: null,
       targets: null, reminders: { enabled: false, weighTime: '07:00', trainingTime: '18:00', trainingDays: [1, 3, 5], checkinDay: 7, checkinTime: '09:00' }
     };
   }
@@ -76,6 +76,7 @@
     const validDate=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d+'T12:00:00Z'))&&new Date(d+'T12:00:00Z').toISOString().slice(0,10)===d;
     if(out.meals.some(m=>!validDate(m.date)||!m.id||(m.items!==undefined&&!Array.isArray(m.items))))throw new Error('Una comida contiene una fecha o ingredientes no válidos.');
     if(out.nutritionDays.some(d=>!validDate(d.date)||typeof d.complete!=='boolean'||['target','tdee'].some(k=>d[k]!=null&&(!Number.isFinite(d[k])||d[k]<=0))))throw new Error('Un día del diario tiene un objetivo o fecha no válidos.');
+    if(out.waterLogs.some(w=>!validDate(w.date)||!w.id||!Number.isFinite(w.ml)||w.ml<=0||w.ml>5000))throw new Error('Hay un registro de agua no válido.');
     return out;
   }
   function save(state) {

@@ -2,20 +2,22 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#101114"><meta name="color-scheme" content="dark">
-  <title>Impulso · Tu transformación</title>
+  <meta name="theme-color" content="#0a0e16"><meta name="color-scheme" content="dark">
+  <title>TNC FITNES · Tu transformación</title>
   <link rel="stylesheet" href="ui.css">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="tnc-logo.png">
+  <link rel="apple-touch-icon" href="tnc-logo.png">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar"><a class="brand" href="#hoy">impulso<span class="muted"> / tu transformación</span></a><span class="pill" id="save-status">Guardado en este dispositivo</span></header>
+    <header class="topbar"><a class="brand" href="#hoy" aria-label="TNC FITNES, inicio"><img class="brand-logo" src="tnc-logo.png" alt="TNC Tech Solutions"><span class="brand-name">TNC <span>FITNES</span></span></a><span class="pill" id="save-status">Guardado en este dispositivo</span></header>
     <div class="layout"><nav class="sidebar" aria-label="Navegación principal">
       <button class="nav-btn active" data-nav="hoy">Hoy</button><button class="nav-btn" data-nav="rutinas">Entrenar</button><button class="nav-btn" data-nav="progreso">Progreso</button><button class="nav-btn" data-nav="comida">Comida</button><button class="nav-btn" data-nav="perfil">Perfil</button>
     </nav><main id="view" tabindex="-1"></main></div>
   </div>
   <dialog id="modal" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button class="btn small" data-close>Cerrar</button></div><div class="modal-body" id="modal-body"></div></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <script src="core.js"></script><script src="seeds.js"></script><script src="store.js"></script><script src="io.js"></script><script src="workout-plan.js"></script><script src="food-catalog.js"></script><script src="nutrition.js"></script><script src="nutrition-ui.js"></script><script src="ui.js"></script>
+  <script src="core.js"></script><script src="wellness.js"></script><script src="seeds.js"></script><script src="store.js"></script><script src="io.js"></script><script src="workout-plan.js"></script><script src="food-catalog.js"></script><script src="restaurant-catalog.js"></script><script src="nutrition.js"></script><script src="nutrition-ui.js"></script><script src="session-image.js"></script><script src="ui.js"></script>
 </body></html>
 

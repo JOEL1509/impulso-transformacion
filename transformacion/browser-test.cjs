@@ -11,7 +11,7 @@ console.log((await page.locator('#view').innerText()).slice(0,300));
 await page.screenshot({path:'transformacion/qa-desktop.png',fullPage:true});
 assert.equal(errors.length,0,errors.join('\n'));
 await page.getByRole('button',{name:'Perfil',exact:true}).click();
-await page.locator('[name=age]').fill('30');await page.locator('[name=heightCm]').fill('180');await page.locator('[name=initialWeightKg]').fill('80');await page.locator('[name=activityFactor]').fill('1.55');
+await page.locator('[name=age]').fill('30');await page.locator('[name=heightCm]').fill('180');await page.locator('[name=initialWeightKg]').fill('80');await page.locator('[name=activityLevel]').selectOption('moderate');
 await page.getByRole('button',{name:'Guardar perfil',exact:true}).click();
 await page.getByRole('button',{name:'Recalcular TDEE',exact:true}).click();
 assert.match(await page.locator('#modal').innerText(),/2,759|2.759/);

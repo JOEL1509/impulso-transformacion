@@ -1,8 +1,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const N=require('./nutrition.js'),P=require('./workout-plan.js'),Catalog=require('./food-catalog.js'),Store=require('./store.js');
 const today='2026-09-14';
-test('111 foods have sourced nutrient values; catalog merges preserve existing IDs and edits',()=>{
- assert.equal(Catalog.foods.length,111);assert.equal(new Set(Catalog.foods.map(f=>f.category)).size,11);
+test('146 foods have sourced nutrient values; catalog merges preserve existing IDs and edits',()=>{
+ assert.equal(Catalog.foods.length,146);assert.equal(new Set(Catalog.foods.map(f=>f.category)).size,13);
  assert.ok(Catalog.foods.every(f=>['kcal','protein','carbs','fat'].every(k=>Number.isFinite(f[k])&&f[k]>=0)&&f.sourceUrl.includes(f.id.slice(5))));
  const input=[{id:'legacy-oats',name:'Avena',kcal:400},{id:'custom',name:'Mi bebida',kcal:80}],copy=structuredClone(input);
  const merged=Catalog.merge(input);assert.deepEqual(input,copy);assert.equal(merged[0].id,'legacy-oats');assert.equal(merged[0].kcal,400);assert.equal(merged.filter(f=>f.name==='Avena').length,1);assert.deepEqual(Catalog.merge(merged),merged);
